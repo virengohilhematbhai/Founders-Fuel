@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-gray-900 antialiased transition-colors duration-300;
+  }
+  .dark body {
+    @apply bg-background text-white;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  html:not(.dark) {
+    color-scheme: light;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 20px rgba(255, 98, 48, 0.5), 0 0 40px rgba(255, 98, 48, 0.3);
+  }
+
+  .glass-card {
+    @apply bg-cardPurple border border-white/5 shadow-xl backdrop-blur-md rounded-xl;
+  }
+
+  .dark .glass-card {
+    @apply bg-cardPurple border-white/5;
+  }
+}
