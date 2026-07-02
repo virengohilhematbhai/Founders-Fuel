@@ -1,0 +1,13 @@
+{
+  "name": "founders-fuel-root",
+  "version": "1.0.0",
+  "description": "FoundersFuel Monorepo Root",
+  "main": "backend/server.js",
+  "scripts": {
+    "postinstall": "cd backend && npm install",
+    "start": "cd backend && npm start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
