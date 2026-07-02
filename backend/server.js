@@ -37,18 +37,28 @@ app.use("/api/users", require("./routes/userRoutes"));
 // Serve uploads statically
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Serve frontend statically
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-// API 404 handler (only for /api routes)
-app.use("/api", (req, res, next) => {
-  res.status(404).json({ success: false, message: `API Route ${req.originalUrl} not found` });
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ success: true, message: "FoundersFuel API is running" });
 });
 
-// Catch-all route to serve the React app
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
-});
+// Serve frontend statically only if dist exists
+const fs = require("fs");
+const distPath = path.join(__dirname, "../frontend/dist");
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+} else {
+  // API-only mode (Render deployment without frontend build)
+  app.use("/api", (req, res) => {
+    res.status(404).json({ success: false, message: `API Route ${req.originalUrl} not found` });
+  });
+  app.get("*", (req, res) => {
+    res.status(200).json({ success: true, message: "FoundersFuel API Server is running. Frontend is deployed separately on Vercel." });
+  });
+}
 
 // Error handler must be LAST (4 params)
 app.use(errorHandler);
