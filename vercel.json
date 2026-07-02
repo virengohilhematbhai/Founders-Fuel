@@ -2,6 +2,9 @@
   "installCommand": "npm install --prefix frontend",
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
+  "env": {
+    "VITE_API_URL": "https://foundersfuel-api.onrender.com"
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
