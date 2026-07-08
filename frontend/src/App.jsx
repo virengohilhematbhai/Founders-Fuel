@@ -43,7 +43,11 @@ function App() {
     if (storedUser && storedToken) {
       // Validate token with the backend before trusting it
       fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${storedToken}` },
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+          "X-Pinggy-No-Screen": "true",
+          "bypass-tunnel-reminder": "true",
+        },
       })
         .then((res) => {
           if (res.ok) {

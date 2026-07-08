@@ -33,12 +33,22 @@ const Login = ({ onLogin }) => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Pinggy-No-Screen": "true",
+          "bypass-tunnel-reminder": "true",
+        },
         body: JSON.stringify({ email: form.email, password: form.password }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        throw new Error("Unable to connect to the backend API. Please make sure the backend server is running.");
+      }
+
+      if (!res.ok) throw new Error(data?.message || "Login failed");
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
