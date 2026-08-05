@@ -51,6 +51,10 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ success: true, message: "FoundersFuel API is running" });
 });
 
+app.get("/api/test-commit", (req, res) => {
+  res.status(200).json({ success: true, commit: "c196c54-active" });
+});
+
 // Serve frontend statically only if dist exists
 const fs = require("fs");
 const distPath = path.join(__dirname, "../frontend/dist");
