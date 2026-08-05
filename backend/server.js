@@ -6,7 +6,7 @@ const connectDB = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
 
 dotenv.config();
-connectDB();
+connectDB().catch((err) => console.error("Initial DB Connection Warning:", err.message));
 
 const app = express();
 
