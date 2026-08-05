@@ -103,13 +103,13 @@ const deleteAccount = async (req, res, next) => {
     // Find chats where this user was a participant
     const userChats = await Chat.find({ users: { $in: [userId] } });
     const chatIds = userChats.map(chat => chat._id);
-    
+
     // Delete all messages belonging to these chats
     await Message.deleteMany({ chat: { $in: chatIds } });
-    
+
     // Delete all messages sent by this user (even if chat remains, e.g. group chat)
     await Message.deleteMany({ sender: userId });
-    
+
     // Delete the chats themselves
     await Chat.deleteMany({ _id: { $in: chatIds } });
 
@@ -121,9 +121,9 @@ const deleteAccount = async (req, res, next) => {
     // 5. Delete the User record
     await user.deleteOne();
 
-    res.status(200).json({ 
-      success: true, 
-      message: "Your account and all associated data (jobs, messages, and reviews) have been permanently removed." 
+    res.status(200).json({
+      success: true,
+      message: "Your account and all associated data (jobs, messages, and reviews) have been permanently removed."
     });
   } catch (error) {
     next(error);

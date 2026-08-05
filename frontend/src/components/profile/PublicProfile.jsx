@@ -84,7 +84,7 @@ const PublicProfile = () => {
       <div className="max-w-5xl mx-auto px-6">
         {/* Back Button */}
         <button 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(-10)}
           className="flex items-center gap-2 text-gray-500 hover:text-brandOrange transition-colors mb-8 font-medium group"
         >
           <IconArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> 
@@ -151,7 +151,7 @@ const PublicProfile = () => {
                   </div>
                   <p className="text-xs text-gray-500 mt-1 font-bold">{reviews.length} Verified Reviews</p>
                 </div>
-                <div className="text-5xl font-black text-gray-900 dark:text-white leading-none">
+                <div className="text-4xl font-black text-gray-900 dark:text-white leading-none">
                   {averageRating}
                 </div>
               </div>

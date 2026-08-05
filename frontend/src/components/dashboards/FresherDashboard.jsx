@@ -28,6 +28,7 @@ import ChatInterface from "../chat/ChatInterface";
 import { Country, State, City } from "country-state-city";
 import { IconSortAscending, IconSortDescending, IconFilter, IconChevronDown } from "@tabler/icons-react";
 import DashboardFeedbackTab from "../profile/DashboardFeedbackTab";
+import { FresherOverviewChart } from "./DashboardCharts";
 
 const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
   const navigate = useNavigate();
@@ -129,6 +130,21 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
 
   const handleProjectSubmit = async (e) => {
     e.preventDefault();
+    if (!projectForm.phone) {
+      setProjectMessage({
+        text: "Phone number is required.",
+        type: "error",
+      });
+      return;
+    }
+    const cleanPhone = projectForm.phone.replace(/[^0-9]/g, "");
+    if (cleanPhone.length !== 10) {
+      setProjectMessage({
+        text: "Phone number must be exactly 10 digits.",
+        type: "error",
+      });
+      return;
+    }
     setProjectSubmitting(true);
     setProjectMessage({ text: "", type: "" });
     try {
@@ -136,7 +152,7 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
       const formData = new FormData();
       formData.append("name", projectForm.name);
       formData.append("email", projectForm.email);
-      formData.append("phone", projectForm.phone);
+      formData.append("phone", cleanPhone);
       formData.append("projectTitle", projectForm.projectTitle);
       formData.append("description", projectForm.description);
 
@@ -312,9 +328,7 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
       });
 
       if (res.ok) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/account-deleted");
+        onLogout("/account-deleted");
       } else {
         const data = await res.json();
         alert(data.message || "Failed to delete account");
@@ -445,11 +459,10 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
             <button
               key={id}
               onClick={() => handleTabChange(id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
-                activeTab === id
-                  ? "bg-brandOrange/10 text-brandOrange border border-brandOrange/20"
-                  : `${textSecondary} hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5`
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${activeTab === id
+                ? "bg-brandOrange/10 text-brandOrange border border-brandOrange/20"
+                : `${textSecondary} hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5`
+                }`}
             >
               <Icon size={18} />
               {label}
@@ -538,39 +551,39 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                   Here's what's happening with your job search today.
                 </p>
               </div>
-              <button
+              {/* <button
                 className={`relative p-2 rounded-xl border border-gray-200 dark:border-white/10 ${textSecondary} hover:text-gray-900 dark:hover:text-white transition-colors self-start sm:self-auto`}
               >
                 <IconBell size={20} />
-              </button>
+              </button> */}
             </div>
           )}
 
           {/* ── OVERVIEW TAB ── */}
           {activeTab === "overview" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1   sm:grid-cols-3 gap-3 sm:gap-4">
                 {[
                   {
                     label: "Jobs Available",
                     value: loadingJobs ? "..." : jobs.length,
-                    color: "text-brandOrange",
+                    color: "text-brandOrange ",
                   },
                   ...(isFresher
                     ? [
-                        {
-                          label: "Applications Sent",
-                          value: appliedJobs.length,
-                          color: "text-purple-500 dark:text-purple-400",
-                        },
-                      ]
+                      {
+                        label: "Applications Sent",
+                        value: appliedJobs.length,
+                        color: "text-purple-500 dark:text-purple-400",
+                      },
+                    ]
                     : [
-                        {
-                          label: "Account Type",
-                          value: "Fresher View",
-                          color: "text-purple-500 dark:text-purple-400",
-                        },
-                      ]),
+                      {
+                        label: "Account Type",
+                        value: "Fresher View",
+                        color: "text-purple-500 dark:text-purple-400",
+                      },
+                    ]),
                   {
                     label: "Skills Listed",
                     value: skills.length || 0,
@@ -587,6 +600,13 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                   </div>
                 ))}
               </div>
+
+              {/* Single Full-Width Applications & Profile Activity Graph */}
+              <FresherOverviewChart
+                isDark={isDark}
+                appliedCount={appliedJobs.length}
+                skillsCount={skills.length}
+              />
 
               {skills.length > 0 && (
                 <div className={`${cardBg} p-4 sm:p-6`}>
@@ -670,11 +690,10 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                             <button
                               onClick={() => handleApply(job._id)}
                               disabled={isApplied || isApplying}
-                              className={`text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0 ${
-                                isApplied
-                                  ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default"
-                                  : "bg-brandOrange/10 text-brandOrange border border-brandOrange/20 hover:bg-brandOrange hover:text-black"
-                              }`}
+                              className={`text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shrink-0 ${isApplied
+                                ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default"
+                                : "bg-brandOrange/10 text-brandOrange border border-brandOrange/20 hover:bg-brandOrange hover:text-black"
+                                }`}
                             >
                               {isApplying ? (
                                 <IconLoader2
@@ -704,182 +723,167 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
             <div className="space-y-4">
               <div className={`${cardBg} p-4 mb-6 shadow-sm`}>
                 <div className="flex flex-col gap-4">
-                  {/* Top Row: Search and Button */}
+                  {/* Top Row: Search Input + Filter Toggle + Desktop Search Button */}
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                      <IconSearch
-                        className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`}
-                        size={18}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Search jobs by title, skills, company..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className={inputCls}
-                      />
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="relative flex-1">
+                        <IconSearch
+                          className={`absolute left-4 top-1/2 -translate-y-1/2 ${textSecondary}`}
+                          size={18}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Search jobs by title, skills, company..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`p-3 rounded-2xl border shrink-0 ${showFilters ? "bg-brandOrange/10 border-brandOrange text-brandOrange" : "border-gray-200 dark:border-white/10 text-gray-500 hover:border-brandOrange/30"} transition-all`}
+                        title="Toggle Filters"
+                      >
+                        <IconFilter size={20} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setShowFilters(!showFilters)}
-                      className={`p-3 rounded-2xl border ${showFilters ? "bg-brandOrange/10 border-brandOrange text-brandOrange" : "border-gray-200 dark:border-white/10 text-gray-500 hover:border-brandOrange/30"} transition-all`}
-                      title="Toggle Filters"
-                    >
-                      <IconFilter size={20} />
-                    </button>
+
+                    {/* Desktop Search Action Button (Hidden on Mobile) */}
                     <button
                       onClick={handleApplyFilters}
-                      className="px-8 py-3 rounded-2xl bg-brandOrange text-black font-bold hover:bg-[#e65a25] transition-all flex items-center justify-center gap-2 shadow-lg shadow-brandOrange/20"
+                      className="hidden sm:flex px-8 py-3 rounded-2xl bg-brandOrange text-black font-bold hover:bg-[#e65a25] transition-all items-center justify-center gap-2 shadow-lg shadow-brandOrange/20 shrink-0"
                     >
                       <IconSearch size={20} />
                       Search
                     </button>
                   </div>
 
-                  {/* Quick Filters */}
-                  {/* <div className="flex flex-wrap gap-2 pt-1">
-                    {[
-                      { label: "AI", value: "AI", type: "tech" },
-                      { label: "React", value: "React", type: "tech" },
-                      { label: "TypeScript", value: "TypeScript", type: "tech" },
-                      { label: "Remote", value: "remote", type: "workMode" },
-                      { label: "UI/UX", value: "UI/UX", type: "tech" },
-                      { label: "Node.js", value: "Node", type: "tech" },
-                    ].map((tag) => {
-                      const isActive = 
-                        (tag.type === "workMode" && filterState.type === tag.value) ||
-                        (tag.type === "tech" && searchQuery === tag.value);
-                      
-                      return (
-                        <button
-                          key={tag.label}
-                          onClick={() => handleQuickFilter(tag.type, tag.value)}
-                          className={`px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all ${
-                            isActive
-                              ? "bg-brandOrange border-brandOrange text-black"
-                              : "bg-purple-500/5 dark:bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400 hover:border-brandOrange/40 hover:bg-brandOrange/5"
-                          }`}
-                        >
-                          {tag.label}
-                        </button>
-                      );
-                    })}
-                  </div> */}
-
-
-                  {/* Bottom Row: Filter Selects (Conditional) */}
+                  {/* Conditional Filter Selects Block */}
                   {showFilters && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-4 border-t border-gray-100 dark:border-white/5 animate-in fade-in slide-in-from-top-2 duration-300">
-                    {/* Country */}
-                    <select
-                      value={filterState.country}
-                      onChange={(e) => setFilterState({ ...filterState, country: e.target.value, state: "", city: "" })}
-                      className={`${inputCls} !px-4 !py-2.5 h-[46px]`}
-                    >
-                      <option value="">All Countries</option>
-                      {Country.getAllCountries().map((c) => (
-                        <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
-                      ))}
-                    </select>
+                    <div className="w-full pt-4 border-t border-gray-100 dark:border-white/5 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {/* Country */}
+                        <select
+                          value={filterState.country}
+                          onChange={(e) => setFilterState({ ...filterState, country: e.target.value, state: "", city: "" })}
+                          className={`${inputCls} !px-4 !py-2.5 h-[46px]`}
+                        >
+                          <option value="">All Countries</option>
+                          {Country.getAllCountries().map((c) => (
+                            <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
+                          ))}
+                        </select>
 
-                    {/* State */}
-                    <select
-                      value={filterState.state}
-                      onChange={(e) => setFilterState({ ...filterState, state: e.target.value, city: "" })}
-                      disabled={!filterState.country}
-                      className={`${inputCls} !px-4 !py-2.5 h-[46px] disabled:opacity-50`}
-                    >
-                      <option value="">All States</option>
-                      {filterState.country && State.getStatesOfCountry(filterState.country).map((s) => (
-                        <option key={s.isoCode} value={s.isoCode}>{s.name}</option>
-                      ))}
-                    </select>
+                        {/* State */}
+                        <select
+                          value={filterState.state}
+                          onChange={(e) => setFilterState({ ...filterState, state: e.target.value, city: "" })}
+                          disabled={!filterState.country}
+                          className={`${inputCls} !px-4 !py-2.5 h-[46px] disabled:opacity-50`}
+                        >
+                          <option value="">All States</option>
+                          {filterState.country && State.getStatesOfCountry(filterState.country).map((s) => (
+                            <option key={s.isoCode} value={s.isoCode}>{s.name}</option>
+                          ))}
+                        </select>
 
-                    {/* City */}
-                    <select
-                      value={filterState.city}
-                      onChange={(e) => setFilterState({ ...filterState, city: e.target.value })}
-                      disabled={!filterState.state}
-                      className={`${inputCls} !px-4 !py-2.5 h-[46px] disabled:opacity-50`}
-                    >
-                      <option value="">All Cities</option>
-                      {filterState.country && filterState.state && City.getCitiesOfState(filterState.country, filterState.state).map((c) => (
-                        <option key={c.name} value={c.name}>{c.name}</option>
-                      ))}
-                    </select>
+                        {/* City */}
+                        <select
+                          value={filterState.city}
+                          onChange={(e) => setFilterState({ ...filterState, city: e.target.value })}
+                          disabled={!filterState.state}
+                          className={`${inputCls} !px-4 !py-2.5 h-[46px] disabled:opacity-50`}
+                        >
+                          <option value="">All Cities</option>
+                          {filterState.country && filterState.state && City.getCitiesOfState(filterState.country, filterState.state).map((c) => (
+                            <option key={c.name} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
 
-                    {/* Salary Dropdown */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowSalaryDropdown(!showSalaryDropdown)}
-                        className={`${inputCls} !px-4 !py-2.5 h-[46px] flex items-center justify-between text-left`}
-                      >
-                        <span className="truncate">
-                          {filterState.salaryRanges.length > 0 
-                            ? `${filterState.salaryRanges.length} Selected` 
-                            : "Salary Range"}
-                        </span>
-                        <IconChevronDown size={16} className={textSecondary} />
-                      </button>
-                      
-                      {showSalaryDropdown && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setShowSalaryDropdown(false)} />
-                          <div className={`absolute top-full left-0 right-0 mt-2 p-4 z-20 ${cardBg} border border-gray-200 dark:border-white/10 shadow-xl`}>
-                            <div className="space-y-3">
-                              {[
-                                { label: "₹0 - ₹10k", value: "0-10" },
-                                { label: "₹10k - ₹20k", value: "10-20" },
-                                { label: "₹20k - ₹30k", value: "20-30" },
-                                { label: "₹30k - 40k", value: "30-40" },
-                                { label: "₹40k - 50k", value: "40-50" },
-                                { label: "₹50k - 60k", value: "50-60" },
-                                { label: "₹60k - 70k", value: "60-70" },
-                                { label: "₹70k - 80k", value: "70-80" },
-                                { label: "₹80k - 90k", value: "80-90" },
-                                { label: "₹90k - 100k", value: "90-100" },
-                                { label: "₹1L+", value: "1L+" }
-                              ].map((range) => (
-                                <label key={range.value} className="flex items-center gap-3 cursor-pointer group">
-                                  <input
-                                    type="checkbox"
-                                    checked={filterState.salaryRanges.includes(range.value)}
-                                    onChange={(e) => {
-                                      const newRanges = e.target.checked
-                                        ? [...filterState.salaryRanges, range.value]
-                                        : filterState.salaryRanges.filter(r => r !== range.value);
-                                      setFilterState({ ...filterState, salaryRanges: newRanges });
-                                    }}
-                                    className="w-4 h-4 rounded border-gray-300 text-brandOrange focus:ring-brandOrange cursor-pointer"
-                                  />
-                                  <span className={`text-sm ${textPrimary} group-hover:text-brandOrange transition-colors`}>
-                                    {range.label}
-                                  </span>
-                                </label>
-                              ))}
-                            </div>
+                        {/* Salary Dropdown */}
+                        {/* <div className="relative">
+                          <button
+                            onClick={() => setShowSalaryDropdown(!showSalaryDropdown)}
+                            className={`${inputCls} !px-4 !py-2.5 h-[46px] flex items-center justify-between text-left`}
+                          >
+                            <span className="truncate">
+                              {filterState.salaryRanges.length > 0 
+                                ? `${filterState.salaryRanges.length} Selected` 
+                                : "Salary Range"}
+                            </span>
+                            <IconChevronDown size={16} className={textSecondary} />
+                          </button>
+                          
+                          {showSalaryDropdown && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setShowSalaryDropdown(false)} />
+                              <div className={`absolute top-full left-0 right-0 mt-2 p-4 z-20 ${cardBg} border border-gray-200 dark:border-white/10 shadow-xl`}>
+                                <div className="space-y-3">
+                                  {[
+                                    { label: "₹0 - ₹10k", value: "0-10" },
+                                    { label: "₹10k - ₹20k", value: "10-20" },
+                                    { label: "₹20k - ₹30k", value: "20-30" },
+                                    { label: "₹30k - 40k", value: "30-40" },
+                                    { label: "₹40k - 50k", value: "40-50" },
+                                    { label: "₹50k - 60k", value: "50-60" },
+                                    { label: "₹60k - 70k", value: "60-70" },
+                                    { label: "₹70k - 80k", value: "70-80" },
+                                    { label: "₹80k - 90k", value: "80-90" },
+                                    { label: "₹90k - 100k", value: "90-100" },
+                                    { label: "₹1L+", value: "1L+" }
+                                  ].map((range) => (
+                                    <label key={range.value} className="flex items-center gap-3 cursor-pointer group">
+                                      <input
+                                        type="checkbox"
+                                        checked={filterState.salaryRanges.includes(range.value)}
+                                        onChange={(e) => {
+                                          const newRanges = e.target.checked
+                                            ? [...filterState.salaryRanges, range.value]
+                                            : filterState.salaryRanges.filter(r => r !== range.value);
+                                          setFilterState({ ...filterState, salaryRanges: newRanges });
+                                        }}
+                                        className="w-4 h-4 rounded border-gray-300 text-brandOrange focus:ring-brandOrange cursor-pointer"
+                                      />
+                                      <span className={`text-sm ${textPrimary} group-hover:text-brandOrange transition-colors`}>
+                                        {range.label}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div> */}
+
+                        {/* Sort Order */}
+                        {/* <div className="relative">
+                          <select
+                            value={filterState.sortOrder}
+                            onChange={(e) => setFilterState({ ...filterState, sortOrder: e.target.value })}
+                            className={`${inputCls} !px-4 !py-2.5 h-[46px] appearance-none`}
+                          >
+                            <option value="desc">High to Low</option>
+                            <option value="asc">Low to High</option>
+                          </select>
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                            {filterState.sortOrder === "desc" ? <IconSortDescending size={16} className={textSecondary}/> : <IconSortAscending size={16} className={textSecondary}/>}
                           </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Sort Order */}
-                    <div className="relative">
-                      <select
-                        value={filterState.sortOrder}
-                        onChange={(e) => setFilterState({ ...filterState, sortOrder: e.target.value })}
-                        className={`${inputCls} !px-4 !py-2.5 h-[46px] appearance-none`}
-                      >
-                        <option value="desc">High to Low</option>
-                        <option value="asc">Low to High</option>
-                      </select>
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        {filterState.sortOrder === "desc" ? <IconSortDescending size={16} className={textSecondary}/> : <IconSortAscending size={16} className={textSecondary}/>}
+                        </div> */}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* Mobile Search Action Button (Hidden on Desktop) */}
+                  <button
+                    onClick={handleApplyFilters}
+                    className="flex sm:hidden w-full py-3 rounded-2xl bg-brandOrange text-black font-bold hover:bg-[#e65a25] transition-all items-center justify-center gap-2 shadow-lg shadow-brandOrange/20 shrink-0 mt-2"
+                  >
+                    <IconSearch size={20} />
+                    Search
+                  </button>
+                </div>
               </div>
-            </div>
+
               {loadingJobs ? (
                 <p className={textSecondary}>Loading jobs...</p>
               ) : filteredJobs.length === 0 ? (
@@ -912,26 +916,26 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                               job.company ||
                               "Startup"}
                           </p>
-                            <div
-                              className={`flex items-center gap-3 sm:gap-4 mt-2 text-xs ${textMuted} flex-wrap`}
-                            >
-                              <span className="flex items-center gap-1 capitalize">
-                                <IconClock size={12} />
-                                {job.type || "remote"}
+                          <div
+                            className={`flex items-center gap-3 sm:gap-4 mt-2 text-xs ${textMuted} flex-wrap`}
+                          >
+                            <span className="flex items-center gap-1 capitalize">
+                              <IconClock size={12} />
+                              {job.type || "remote"}
+                            </span>
+                            {(job.country || job.city) && (
+                              <span className="flex items-center gap-1">
+                                <IconWorld size={12} />
+                                {[job.city, job.state, job.country].filter(Boolean).join(", ")}
                               </span>
-                              {(job.country || job.city) && (
-                                <span className="flex items-center gap-1">
-                                  <IconWorld size={12} />
-                                  {[job.city, job.state, job.country].filter(Boolean).join(", ")}
-                                </span>
-                              )}
-                              {job.duration && <span>{job.duration}</span>}
-                              {job.stipend && (
-                                <span className="text-brandOrange font-medium">
-                                  {job.stipend}
-                                </span>
-                              )}
-                            </div>
+                            )}
+                            {job.duration && <span>{job.duration}</span>}
+                            {job.stipend && (
+                              <span className="text-brandOrange font-medium">
+                                {job.stipend}
+                              </span>
+                            )}
+                          </div>
                           {job.tags && job.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-3">
                               {job.tags.map((tag) => (
@@ -1003,11 +1007,10 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                             <button
                               onClick={() => handleApply(job._id)}
                               disabled={isApplied || isApplying}
-                              className={`shrink-0 px-3 sm:px-4 py-2  rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1 sm:gap-2 ${
-                                isApplied
-                                  ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default"
-                                  : "bg-brandOrange text-black hover:bg-[#e65a25] disabled:opacity-60"
-                              }`}
+                              className={`shrink-0 px-3 sm:px-4 py-2  rounded-xl text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1 sm:gap-2 ${isApplied
+                                ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 cursor-default"
+                                : "bg-brandOrange text-black hover:bg-[#e65a25] disabled:opacity-60"
+                                }`}
                             >
                               {isApplying ? (
                                 <>
@@ -1196,11 +1199,10 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                 </h2>
                 {projectMessage.text && (
                   <div
-                    className={`mb-4 rounded-xl px-4 py-3 text-sm border ${
-                      projectMessage.type === "success"
-                        ? "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400"
-                        : "bg-red-500/10 border-red-500/30 text-red-500 dark:text-red-400"
-                    }`}
+                    className={`mb-4 rounded-xl px-4 py-3 text-sm border ${projectMessage.type === "success"
+                      ? "bg-green-500/10 border-green-500/30 text-green-600 dark:text-green-400"
+                      : "bg-red-500/10 border-red-500/30 text-red-500 dark:text-red-400"
+                      }`}
                   >
                     {projectMessage.text}
                   </div>
@@ -1236,16 +1238,19 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                       Phone
                     </label>
                     <input
-                      type="text"
+                      type="tel"
                       value={projectForm.phone}
-                      onChange={(e) =>
-                        setProjectForm({
-                          ...projectForm,
-                          phone: e.target.value,
-                        })
-                      }
+                      onChange={(e) => {
+                        const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+                        if (onlyNums.length <= 10) {
+                          setProjectForm({
+                            ...projectForm,
+                            phone: onlyNums,
+                          });
+                        }
+                      }}
                       className={inputCls}
-                      placeholder="Your mobile number"
+                      placeholder="Enter 10-digit number"
                       required
                     />
                   </div>
@@ -1334,8 +1339,8 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
 
           {/* ── PROFILE TAB ── */}
           {activeTab === "profile" && (
-            <div className="max-w-xl space-y-6">
-              <div className={`${cardBg} p-4 sm:p-6`}>
+            <div className="max-w-auto space-y-6">
+              <div className={`${cardBg} p-4 sm:p-8`}>
                 <h2 className={`${textPrimary} font-semibold mb-6`}>
                   Profile Information
                 </h2>
@@ -1348,11 +1353,11 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                     { label: "Account Type", value: "Fresher" },
                     ...(isFresher
                       ? [
-                          {
-                            label: "Applications Sent",
-                            value: String(appliedJobs.length),
-                          },
-                        ]
+                        {
+                          label: "Applications Sent",
+                          value: String(appliedJobs.length),
+                        },
+                      ]
                       : []),
                   ].map(({ label, value }) => (
                     <div
@@ -1372,12 +1377,15 @@ const FresherDashboard = ({ user, onLogout, setCurrentPage }) => {
                 </div>
 
                 {/* My Profile Link Button - Based on user request image */}
-                <button 
+                <button
                   onClick={() => navigate(`/profile/${user._id || user.id}`)}
-                  className="mt-8 w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-brandOrange/10 border border-gray-100 dark:border-white/5 transition-all group"
+                  className="mt-8 w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-blue-100 hover:bg-blue-900/20 border border-gray-100 dark:border-white/5 transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#100c22] border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm group-hover:border-brandOrange/30 transition-colors">
-                    <IconUser className="text-gray-400 group-hover:text-brandOrange" size={22} />
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#100c22] border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm group-hover:border-blue-200 transition-colors">
+                    <IconUser
+                      className="text-gray-400 group-hover:text-blue-700"
+                      size={22}
+                    />
                   </div>
                   <span className="text-[#0038A8] dark:text-blue-400 font-bold text-lg">My Profile</span>
                 </button>

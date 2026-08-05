@@ -1,10 +1,19 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const generateToken = (id, sessionToken) => {
+  return jwt.sign({ id, sessionToken }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
+};
+
+// Helper: generate a unique session token and its expiry date
+const createSessionData = () => {
+  const sessionToken = crypto.randomUUID();
+  // Session expiry matches JWT expiry (default 7 days)
+  const sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  return { sessionToken, sessionExpiry };
 };
 
 // POST /api/auth/register
@@ -33,11 +42,16 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email already registered" });
     }
 
+    // Generate session for single-device login
+    const { sessionToken, sessionExpiry } = createSessionData();
+
     const userData = {
       fullName: fullName.trim(),
       email: email.toLowerCase().trim(),
       password,
       userType,
+      activeSessionToken: sessionToken,
+      activeSessionExpiry: sessionExpiry,
     };
     if (userType === "fresher") {
       userData.phone = phone.trim();
@@ -48,12 +62,13 @@ const register = async (req, res) => {
     }
 
     const user = await User.create(userData);
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, sessionToken);
 
     return res.status(201).json({
       success: true,
       message: "Account created successfully",
       token,
+      sessionToken,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -103,12 +118,20 @@ const login = async (req, res) => {
       });
     }
 
-    const token = generateToken(user._id);
+    // Create new session and save to DB using findByIdAndUpdate (avoids password re-hash)
+    const { sessionToken, sessionExpiry } = createSessionData();
+    await User.findByIdAndUpdate(user._id, {
+      activeSessionToken: sessionToken,
+      activeSessionExpiry: sessionExpiry,
+    });
+
+    const token = generateToken(user._id, sessionToken);
 
     return res.status(200).json({
       success: true,
       message: "Login successful",
       token,
+      sessionToken,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -126,6 +149,20 @@ const login = async (req, res) => {
   }
 };
 
+// POST /api/auth/logout — clears the active session so another device can log in
+const logout = async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      activeSessionToken: null,
+      activeSessionExpiry: null,
+    });
+    return res.status(200).json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error.name, "-", error.message);
+    return res.status(500).json({ success: false, message: "Server error during logout." });
+  }
+};
+
 // GET /api/auth/me
 const getMe = async (req, res) => {
   try {
@@ -137,4 +174,4 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe };
+module.exports = { register, login, logout, getMe };

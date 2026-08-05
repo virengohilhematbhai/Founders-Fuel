@@ -14,7 +14,7 @@ import DashboardFeedbackTab from "./components/profile/DashboardFeedbackTab";
 import PublicProfile from "./components/profile/PublicProfile";
 import TermsAndConditions from "./components/pages/TermsAndConditions";
 import PrivacyPolicy from "./components/pages/PrivacyPolicy";
-import AccountDeleted from "./components/profile/AccountDeleted";
+// import AccountDeleted from "./components/profile/AccountDeleted";
 
 // Helper to get the correct dashboard path for a user
 const getDashboardPath = (userData) => {
@@ -45,8 +45,6 @@ function App() {
       fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${storedToken}`,
-          "X-Pinggy-No-Screen": "true",
-          "bypass-tunnel-reminder": "true",
         },
       })
         .then((res) => {
@@ -70,17 +68,37 @@ function App() {
     }
   }, []);
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const handleLogin = (userData) => {
     setUser(userData);
     // Redirect to the correct dashboard based on userType
     navigate(getDashboardPath(userData));
   };
 
-  const handleLogout = () => {
+  const handleLogout = async (redirectPath = "/") => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      try {
+        await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/logout`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${storedToken}`,
+            "Content-Type": "application/json",
+          },
+        });
+      } catch (err) {
+        console.error("Logout API call failed:", err.message);
+      }
+    }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("sessionToken");
     setUser(null);
-    navigate("/");
+    navigate(redirectPath);
   };
 
   // Hide Navbar/Footer on dashboard pages for a cleaner layout
@@ -151,7 +169,7 @@ function App() {
           />
           <Route path="/terms" element={<TermsAndConditions />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/account-deleted" element={<AccountDeleted />} />
+          {/* <Route path="/account-deleted" element={<AccountDeleted />} /> */}
           {/* Catch-all — redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

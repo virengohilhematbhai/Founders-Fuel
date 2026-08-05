@@ -8,11 +8,11 @@ const JobCard = ({ type, title, company, tags, extraInfo }) => {
       <div className="flex-shrink-0 mt-1">
         {type === 'lightning' ? (
           <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800/50 flex animate-bounce items-center justify-center border border-slate-200 dark:border-slate-700">
-            <Zap className="text-brandOrange w-5 h-5" fill="currentColor" />
+            <Zap className="text-brandOrange w-5  h-5" fill="currentColor" />
           </div>
         ) : (
           <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex animate-bounce items-center justify-center border border-slate-200 dark:border-slate-700">
-            <Bot className="text-pink-400 dark:text-pink-300 w-5 h-5" />
+            <Bot className="text-pink-400 dark:text-pink-300 w-5  h-5" />
           </div>
         )}
       </div>

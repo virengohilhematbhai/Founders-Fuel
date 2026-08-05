@@ -33,6 +33,7 @@ import { useTheme } from "../../context/ThemeContext";
 import ChatInterface from "../chat/ChatInterface";
 import { Country, State, City } from "country-state-city";
 import DashboardFeedbackTab from "../profile/DashboardFeedbackTab";
+import { StartupOverviewChart } from "./DashboardCharts";
 
 const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
   const navigate = useNavigate();
@@ -318,7 +319,7 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
 
   const handleDeleteAccount = async () => {
     const confirmDelete = window.confirm(
-      "EXTREME WARNING: Once you choose to permanently delete your account, all your chat data, messages, and personal information will be completely removed from our system. This includes deleting the chat bar and all conversation history, and none of this data can be recovered in the future. Your account will no longer exist, and you will lose access to all associated features and content. This action is final and irreversible. Are you absolutely sure?"
+      "EXTREME WARNING: Once you choose to permanently delete your account"
     );
     if (!confirmDelete) return;
 
@@ -330,9 +331,7 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
       });
 
       if (res.ok) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/account-deleted");
+        onLogout("/account-deleted");
       } else {
         const data = await res.json();
         alert(data.message || "Failed to delete account");
@@ -403,7 +402,7 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                 {user.fullName}
               </p>
               <p className="text-xs text-brandOrange capitalize truncate">
-                {user.companyName || user.userType}
+                {user.userType}
               </p>
             </div>
           </div>
@@ -422,11 +421,10 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
             <button
               key={id}
               onClick={() => handleTabChange(id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
-                activeTab === id
-                  ? "bg-brandOrange/10 text-brandOrange border border-brandOrange/20"
-                  : `${textSecondary} hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5`
-              }`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${activeTab === id
+                ? "bg-brandOrange/10 text-brandOrange border border-brandOrange/20"
+                : `${textSecondary} hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5`
+                }`}
             >
               <Icon size={18} />
               {label}
@@ -510,6 +508,7 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
           {activeTab !== "messages" && (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 lg:mb-8">
               <div>
+
                 <h1 className={`text-xl sm:text-2xl font-bold ${textPrimary}`}>
                   Welcome,{" "}
                   <span className="text-brandOrange">
@@ -521,18 +520,18 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                   Manage your job listings and find the best talent.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-end gap-3">
                 <button
                   onClick={() => setShowPostForm(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brandOrange text-black font-semibold text-sm hover:bg-[#e65a25] transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brandOrange text-black font-semibold text-sm   hover:bg-[#e65a25] transition-colors"
                 >
                   <IconPlus size={16} /> Post a Job
                 </button>
-                <button
+                {/* <button
                   className={`relative p-2 rounded-xl border border-gray-200 dark:border-white/10 ${textSecondary} hover:text-gray-900 dark:hover:text-white transition-colors`}
                 >
                   <IconBell size={20} />
-                </button>
+                </button> */}
               </div>
             </div>
           )}
@@ -749,6 +748,13 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                   </div>
                 ))}
               </div>
+
+              {/* Single Full-Width Recruitment Velocity Graph */}
+              <StartupOverviewChart
+                isDark={isDark}
+                jobsCount={jobs.length}
+                totalApplicants={totalApplicants}
+              />
               <div className={`${cardBg} p-4 sm:p-6`}>
                 <h2 className={`${textPrimary} font-semibold mb-4`}>
                   Quick Actions
@@ -775,15 +781,15 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
           {activeTab === "jobs" && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <h2 className={`${textPrimary} font-semibold`}>
+                <h2 className={`${textPrimary} font-semibold mb-5`}>
                   Your Job Listings
                 </h2>
-                <button
+                {/* <button
                   onClick={() => setShowPostForm(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brandOrange text-black font-semibold text-sm hover:bg-[#e65a25] transition-colors self-start sm:self-auto"
                 >
                   <IconPlus size={16} /> Post Job
-                </button>
+                </button> */}
               </div>
               {postSuccess && (
                 <div className="rounded-xl bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-600 dark:text-green-400 text-sm">
@@ -898,11 +904,10 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                       </div>
                       <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-2">
                         <span
-                          className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
-                            job.applicants?.length > 0
-                              ? "bg-purple-500/10 border border-purple-500/20 text-purple-500 dark:text-purple-400"
-                              : "bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-400"
-                          }`}
+                          className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${job.applicants?.length > 0
+                            ? "bg-purple-500/10 border border-purple-500/20 text-purple-500 dark:text-purple-400"
+                            : "bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-400"
+                            }`}
                         >
                           {job.applicants?.length || 0} applicant
                           {job.applicants?.length !== 1 ? "s" : ""}
@@ -1198,8 +1203,8 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
 
           {/* Profile Tab */}
           {activeTab === "profile" && (
-            <div className="max-w-xl space-y-6">
-              <div className={`${cardBg} p-4 sm:p-6`}>
+            <div className="max-w-auto space-y-6">
+              <div className={`${cardBg} p-4 sm:p-8`}>
                 <h2 className={`${textPrimary} font-semibold mb-6`}>
                   Company Profile
                 </h2>
@@ -1238,14 +1243,14 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                 </div>
 
                 {/* Edit Profile Form */}
-               
+
 
                 {/* Edit Profile Form */}
                 <form onSubmit={handleProfileUpdate} className="mt-8 pt-8 border-t border-gray-100 dark:border-white/5 space-y-4">
                   <h3 className={`${textPrimary} font-semibold mb-4 flex items-center gap-2`}>
                     <IconBuilding size={18} className="text-brandOrange" /> Update Office Details
                   </h3>
-                  
+
                   <div className="flex flex-col gap-1">
                     <label className={formLabel}>Office Address</label>
                     <textarea
@@ -1258,7 +1263,7 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1">
                       <label className={formLabel}>Latitude</label>
                       <input
@@ -1283,7 +1288,7 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                         className={formInput}
                       />
                     </div>
-                  </div>
+                  </div> */}
 
                   <p className="text-[10px] text-gray-500 italic">
                     Tip: You can use <a href="https://www.latlong.net/" target="_blank" rel="noreferrer" className="text-brandOrange hover:underline">latlong.net</a> to find your office coordinates.
@@ -1305,11 +1310,11 @@ const StartupDashboard = ({ user, onLogout, setCurrentPage }) => {
                 {/* My Profile Link Button - Based on user request image */}
                 <button
                   onClick={() => navigate(`/profile/${user._id || user.id}`)}
-                  className="mt-8 w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-brandOrange/10 border border-gray-100 dark:border-white/5 transition-all group"
+                  className="mt-8 w-full flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-white/5 hover:bg-blue-50 hover:bg-blue-900/20 border border-gray-100 dark:border-white/5 transition-all group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#100c22] border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm group-hover:border-[#0038A8] transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#100c22] border border-gray-100 dark:border-white/5 flex items-center justify-center shadow-sm group-hover:border-blue-700 transition-colors">
                     <IconUser
-                      className="text-gray-400 group-hover:text-[#0038A8]"
+                      className="text-gray-400 group-hover:text-blue-700"
                       size={22}
                     />
                   </div>

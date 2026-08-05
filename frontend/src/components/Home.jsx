@@ -19,7 +19,10 @@ const Hero = () => {
         {/* Left Content */}
         <div className="flex-1 w-full max-w-2xl">
           <div className="inline-flex items-center gap-2 px-4 py-2  md:mt-10 rounded-full border border-teal-200 dark:border-teal-900/50 bg-teal-50 dark:bg-teal-900/10 mb-5">
-            <Flame className="w-4 h-4 animate-bounce text-brandOrange" fill="currentColor" />
+            <Flame
+              className="w-4 h-4 animate-bounce text-brandOrange"
+              fill="currentColor"
+            />
             <span className="text-xs font-bold animate-pulse  tracking-widest text-teal-600 dark:text-[#B4E0E8]">
               THE STARTUP TALENT NETWORK
             </span>
@@ -143,19 +146,19 @@ const Hero = () => {
                 tags={[
                   {
                     label: "REACT",
-                    url:"https://www.w3schools.com/react/default.asp",
+                    url: "https://www.w3schools.com/react/default.asp",
                     colorClass:
                       "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-400 dark:border-purple-200/30",
                   },
                   {
                     label: "TYPESCRIPT",
-                    url:"https://www.w3schools.com/typescript/index.php",
+                    url: "https://www.w3schools.com/typescript/index.php",
                     colorClass:
                       "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-400 dark:border-purple-200/30",
                   },
                   {
                     label: "ASP.NET",
-                    url:"https://www.w3schools.com/asp/",
+                    url: "https://www.w3schools.com/asp/",
                     colorClass:
                       "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-400 dark:border-purple-200/30",
                   },
@@ -164,7 +167,7 @@ const Hero = () => {
             </div>
 
             {/* Bottom Card */}
-            <div  className="lg:ml-[-1rem] xl:ml-[-9rem] transform -translate-y-6">
+            <div className="lg:ml-[-1rem] xl:ml-[-9rem] transform -translate-y-6">
               <JobCard
                 onClick={() => navigate("/register")}
                 type="bot"

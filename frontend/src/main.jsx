@@ -4,12 +4,14 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+// import { SpeedInsights } from "@vercel/speed-insights/next"
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <ThemeProvider>
         <App />
+        {/* <SpeedInsights /> */}
       </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,

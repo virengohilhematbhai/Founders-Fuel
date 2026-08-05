@@ -6,10 +6,13 @@ import {
   IconArrowRight,
   IconShieldCheck,
   IconLoader2,
+  IconEye,
+  IconEyeOff,
 } from "@tabler/icons-react";
 
 const Login = ({ onLogin }) => {
   const [form, setForm] = useState({ email: "", password: "", rememberMe: false });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -35,8 +38,6 @@ const Login = ({ onLogin }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Pinggy-No-Screen": "true",
-          "bypass-tunnel-reminder": "true",
         },
         body: JSON.stringify({ email: form.email, password: form.password }),
       });
@@ -52,6 +53,7 @@ const Login = ({ onLogin }) => {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.sessionToken) localStorage.setItem("sessionToken", data.sessionToken);
 
       setSuccess(`Welcome back, ${data.user.fullName}! Redirecting to dashboard...`);
 
@@ -150,10 +152,21 @@ const Login = ({ onLogin }) => {
                   <div className="relative">
                     <IconLock className="absolute left-4 top-1/2 -translate-y-1/2 text-brandOrange" size={20} />
                     <input
-                      type="password" name="password" value={form.password} onChange={handleChange}
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={form.password}
+                      onChange={handleChange}
                       placeholder="Enter your password"
                       className={inputClass}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brandOrange transition-colors focus:outline-none"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <IconEyeOff size={20} /> : <IconEye size={20} />}
+                    </button>
                   </div>
                 </div>
 

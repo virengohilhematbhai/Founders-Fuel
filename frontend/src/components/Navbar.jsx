@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Sun, Moon } from "lucide-react";
 import logo from "../assets/logo_vibrant.png";
@@ -11,6 +11,48 @@ const Header = ({ user, onLogout }) => {
   const location = useLocation();
 
   const currentPage = location.pathname;
+
+  const menuRef = useRef(null);
+  const toggleBtnRef = useRef(null);
+
+  // Close mobile menu on page navigation
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Lock document body scroll when mobile menu is active
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
+  // Close menu on click/touch outside
+  useEffect(() => {
+    const handleTouchOutside = (event) => {
+      if (
+        mobileMenuOpen &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        toggleBtnRef.current &&
+        !toggleBtnRef.current.contains(event.target)
+      ) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleTouchOutside);
+    document.addEventListener("touchstart", handleTouchOutside, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleTouchOutside);
+      document.removeEventListener("touchstart", handleTouchOutside);
+    };
+  }, [mobileMenuOpen]);
 
   const handleNavClick = (path) => {
     navigate(path);
@@ -33,40 +75,39 @@ const Header = ({ user, onLogout }) => {
   };
 
   const navLinkClass = (path) =>
-    `${
-      currentPage === path
-        ? "text-brandOrange"
-        : "text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+    `${currentPage === path
+      ? "text-brandOrange"
+      : "text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
     } transition-colors font-medium`;
 
   return (
     <header className="w-full fixed top-0 left-0 right-0 flex items-center justify-between py-3 px-6 md:px-8 xl:px-15 bg-white/80 dark:bg-background/80 backdrop-blur-md border-b border-gray-200 dark:border-white/5 z-30 transition-colors duration-300">
       {/* Logo */}
-       <div
-                   className="flex items-center gap-2 sm:gap-4 md:gap-3 group cursor-pointer"
-                   onClick={() => handleNavClick("/")}
-                 >
-                   <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 bg-gradient-to-br from-brandBlue via-brandOrange to-brandGreen p-[2px] rounded-xl lg:rounded-2xl shadow-xl group-hover:scale-105 transition-transform duration-300">
-                     <div className="w-full h-full bg-white rounded-[10px] lg:rounded-[15px] flex items-center justify-center overflow-hidden">
-                       <img
-                         src={logo}
-                         alt="FoundersFuel"
-                         className="w-full h-full object-contain  dark:brightness-110"
-                       />
-                     </div>
-                   </div>
-                   <div className="flex flex-col justify-center">
-                     <span className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-black tracking-tighter flex items-center leading-none">
-                       <span className="text-gray-900 dark:text-white">
-                         Founders
-                       </span>
-                       <span className="text-brandOrange">Fuel</span>
-                     </span>
-                     <span className="text-[8px] md:text-[10px] lg:text-[12px] uppercase tracking-[0.2em] md:tracking-[0.3em] text-gray-500 dark:text-gray-400 font-bold mt-0.5 md:mt-1.5 ml-0.5">
-                       Fueling Innovation
-                     </span>
-                   </div>
-                 </div>
+      <div
+        className="flex items-center gap-2 sm:gap-4 md:gap-3 group cursor-pointer"
+        onClick={() => handleNavClick("/")}
+      >
+        <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 bg-gradient-to-br from-brandBlue via-brandOrange to-brandGreen p-[2px] rounded-xl lg:rounded-2xl shadow-xl group-hover:scale-105 transition-transform duration-300">
+          <div className="w-full h-full bg-white rounded-[10px] lg:rounded-[15px] flex items-center justify-center overflow-hidden">
+            <img
+              src={logo}
+              alt="FoundersFuel"
+              className="w-full h-full object-contain  dark:brightness-110"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col justify-center">
+          <span className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-black tracking-tighter flex items-center leading-none">
+            <span className="text-gray-900 dark:text-white">
+              Founders
+            </span>
+            <span className="text-brandOrange">Fuel</span>
+          </span>
+          <span className="text-[8px] md:text-[10px] lg:text-[12px] uppercase tracking-[0.2em] md:tracking-[0.3em] text-gray-500 dark:text-gray-400 font-bold mt-0.5 md:mt-1.5 ml-0.5">
+            Fueling Innovation
+          </span>
+        </div>
+      </div>
 
       {/* Desktop Nav */}
       <nav className="hidden md:flex items-center gap-8 sm:gap-4 lg:gap-12 xl:gap-15">
@@ -127,7 +168,7 @@ const Header = ({ user, onLogout }) => {
           className="p-2 rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:border-gray-400 dark:hover:border-white/30 transition-all"
           aria-label="Toggle theme"
         >
-          {isDark ? <Sun size={18} className="animate-bounce" /> : <Moon size={18} className="animate-bounce" />}
+          {isDark ? <Sun size={18} className="animate-pulse" /> : <Moon size={18} className="animate-pulse" />}
         </button>
       </nav>
 
@@ -138,9 +179,10 @@ const Header = ({ user, onLogout }) => {
           className="p-2 rounded-lg border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-all"
           aria-label="Toggle theme"
         >
-          {isDark ? <Sun size={18} className="animate-bounce" /> : <Moon size={18} className="animate-bounce" />}
+          {isDark ? <Sun size={18} className="animate-pulse" /> : <Moon size={18} className="animate-pulse" />}
         </button>
         <button
+          ref={toggleBtnRef}
           className="text-gray-500 dark:text-gray-300 p-2 z-30"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
@@ -154,8 +196,12 @@ const Header = ({ user, onLogout }) => {
           <div
             className="fixed inset-0 bg-black/50 z-10 md:hidden"
             onClick={() => setMobileMenuOpen(false)}
+            onTouchStart={() => setMobileMenuOpen(false)}
           />
-          <div className="absolute top-20 left-0 right-0 bg-white dark:bg-background border-b border-gray-200 dark:border-white/10 flex flex-col gap-4 p-6 md:hidden z-20 transition-colors duration-300">
+          <div
+            ref={menuRef}
+            className="absolute top-full left-0 right-0 bg-white dark:bg-background border-b border-gray-200 dark:border-white/10 flex flex-col gap-4 p-6 md:hidden z-20 transition-colors duration-300"
+          >
             <button
               onClick={() => handleNavClick("/")}
               className={`${currentPage === "/" ? "text-brandOrange" : "text-gray-500 dark:text-gray-300"} text-left hover:text-gray-900 dark:hover:text-white transition-colors font-medium`}

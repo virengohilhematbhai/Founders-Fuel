@@ -25,7 +25,9 @@ const Contact = () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/contact`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(form),
       });
 
@@ -145,7 +147,7 @@ const Contact = () => {
                 <div className="flex flex-col gap-2">
                   <label className={labelClass}>Message</label>
                   <textarea
-                    rows="3" name="message" value={form.message} onChange={handleChange}
+                    rows="4" name="message" value={form.message} onChange={handleChange}
                     placeholder="Tell us more..."
                     className={`${inputClass} resize-none`}
                   />

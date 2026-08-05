@@ -11,12 +11,16 @@ import {
   IconX,
   IconFile,
   IconMoodSmile,
+  IconTrash,
+  IconDotsVertical,
+  IconSquare,
+  IconSquareCheck,
 } from "@tabler/icons-react";
 import EmojiPicker from "emoji-picker-react";
 
 // For production, fallback to window.location.origin
 const ENDPOINT = `${import.meta.env.VITE_API_URL || ""}`;
-var socket, selectedChatCompare;
+var selectedChatCompare;
 
 const VideoMessage = ({ fileUrl, fileType, isSender }) => {
   const [playing, setPlaying] = useState(false);
@@ -132,6 +136,7 @@ const ChatInterface = ({ user }) => {
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [socket, setSocket] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState(null);
@@ -141,9 +146,15 @@ const ChatInterface = ({ user }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  // Message selection states
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMessageIds, setSelectedMessageIds] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -153,6 +164,12 @@ const ChatInterface = ({ user }) => {
       ) {
         setShowEmojiPicker(false);
       }
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setShowDropdown(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -161,17 +178,29 @@ const ChatInterface = ({ user }) => {
   }, []);
 
   useEffect(() => {
-    socket = io(ENDPOINT);
-    socket.emit("setup", user);
-    socket.on("connected", () => setSocketConnected(true));
-    socket.on("typing", () => setIsTyping(true));
-    socket.on("stop typing", () => setIsTyping(false));
+    const s = io(ENDPOINT);
+    setSocket(s);
+
+    s.on("connect", () => {
+      if (user) {
+        s.emit("setup", user);
+      }
+    });
+
+    s.on("connected", () => setSocketConnected(true));
+    s.on("typing", () => setIsTyping(true));
+    s.on("stop typing", () => setIsTyping(false));
 
     return () => {
-      socket.disconnect();
+      s.disconnect();
     };
-    // eslint-disable-next-line
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    if (socket && selectedChat) {
+      socket.emit("join chat", selectedChat._id);
+    }
+  }, [socket, selectedChat]);
 
   const fetchChats = async () => {
     try {
@@ -203,31 +232,157 @@ const ChatInterface = ({ user }) => {
       const data = await res.json();
       setMessages(data);
       setLoading(false);
-      socket.emit("join chat", selectedChat._id);
+      await fetchChats();
     } catch (error) {
       console.error(error);
     }
   };
+  
 
   useEffect(() => {
     fetchMessages();
     selectedChatCompare = selectedChat;
+    setSelectionMode(false);
+    setSelectedMessageIds([]);
     // eslint-disable-next-line
   }, [selectedChat]);
 
   useEffect(() => {
-    socket.on("message recieved", (newMessageRecieved) => {
+    if (!socket) return;
+
+    const handleMessageRecieved = (newMessageRecieved) => {
+      if (!newMessageRecieved || !newMessageRecieved.chat) return;
+      const chatId = newMessageRecieved.chat._id || newMessageRecieved.chat;
       if (
         !selectedChatCompare ||
-        selectedChatCompare._id !== newMessageRecieved.chat._id
+        selectedChatCompare._id !== chatId
       ) {
-        // give notification or update chat list with new message latestMessage
         fetchChats();
       } else {
-        setMessages([...messages, newMessageRecieved]);
+        setMessages((prevMessages) => {
+          if (prevMessages.some((m) => m._id === newMessageRecieved._id)) {
+            return prevMessages;
+          }
+          return [...prevMessages, newMessageRecieved];
+        });
+      }
+    };
+
+    const handleMultipleMessagesDeleted = (data) => {
+      if (selectedChatCompare && selectedChatCompare._id === data.chatId) {
+        setMessages((prevMessages) => prevMessages.filter((msg) => !data.messageIds.includes(msg._id)));
+        fetchChats();
+      } else {
+        fetchChats();
+      }
+    };
+
+    const handleChatMessagesCleared = (chatId) => {
+      if (selectedChatCompare && selectedChatCompare._id === chatId) {
+        setMessages([]);
+        fetchChats();
+      } else {
+        fetchChats();
+      }
+    };
+
+    socket.on("message recieved", handleMessageRecieved);
+    socket.on("multiple messages deleted", handleMultipleMessagesDeleted);
+    socket.on("chat messages cleared", handleChatMessagesCleared);
+
+    return () => {
+      socket.off("message recieved", handleMessageRecieved);
+      socket.off("multiple messages deleted", handleMultipleMessagesDeleted);
+      socket.off("chat messages cleared", handleChatMessagesCleared);
+    };
+  }, [socket, selectedChat]);
+
+  const handleDeleteAllMessages = async () => {
+    if (!selectedChat) return;
+    setShowDropdown(false);
+
+    if (
+      !window.confirm(
+        "Are you sure you want to permanently delete all messages from this conversation? "
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/message/clear/${selectedChat._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessages([]);
+        fetchChats();
+        if (socketConnected && selectedChat) {
+          socket.emit("clear chat messages", selectedChat._id);
+        }
+      } else {
+        alert(data.message || "Failed to clear messages");
+      }
+    } catch (error) {
+      console.error("Error clearing messages:", error);
+      alert("Error clearing messages");
+    }
+  };
+
+  const handleDeleteSelectedMessages = async () => {
+    if (selectedMessageIds.length === 0) return;
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete the selected ${selectedMessageIds.length} message(s)?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/message/delete-multiple`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ messageIds: selectedMessageIds }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessages((prevMessages) => prevMessages.filter((msg) => !selectedMessageIds.includes(msg._id)));
+        fetchChats();
+        if (socketConnected && selectedChat) {
+          socket.emit("delete multiple messages", { chatId: selectedChat._id, messageIds: selectedMessageIds });
+        }
+        setSelectionMode(false);
+        setSelectedMessageIds([]);
+      } else {
+        alert(data.message || "Failed to delete selected messages");
+      }
+    } catch (error) {
+      console.error("Error deleting selected messages:", error);
+      alert("Error deleting selected messages");
+    }
+  };
+
+  const handleToggleMessageSelection = (messageId) => {
+    setSelectedMessageIds((prevIds) => {
+      if (prevIds.includes(messageId)) {
+        return prevIds.filter((id) => id !== messageId);
+      } else {
+        return [...prevIds, messageId];
       }
     });
-  });
+  };
 
   const onEmojiClick = (emojiObject) => {
     setNewMessage((prev) => prev + emojiObject.emoji);
@@ -249,7 +404,7 @@ const ChatInterface = ({ user }) => {
     if (e.key === "Enter" || e.type === "click") {
       if (e.key === "Enter") e.preventDefault();
       if (newMessage.trim() || selectedFile) {
-        socket.emit("stop typing", selectedChat._id);
+        if (socket) socket.emit("stop typing", selectedChat._id);
         try {
           const token = localStorage.getItem("token");
           const msgToSend = newMessage;
@@ -272,8 +427,8 @@ const ChatInterface = ({ user }) => {
             body: formData,
           });
           const data = await res.json();
-          socket.emit("new message", data);
-          setMessages([...messages, data]);
+          if (socket) socket.emit("new message", data);
+          setMessages((prev) => [...prev, data]);
           fetchChats(); // update latest message in list
         } catch (error) {
           console.error(error);
@@ -285,7 +440,7 @@ const ChatInterface = ({ user }) => {
   const typingHandler = (e) => {
     setNewMessage(e.target.value);
 
-    if (!socketConnected) return;
+    if (!socketConnected || !socket) return;
 
     if (!typing) {
       setTyping(true);
@@ -297,7 +452,7 @@ const ChatInterface = ({ user }) => {
     setTimeout(() => {
       var timeNow = new Date().getTime();
       var timeDiff = timeNow - lastTypingTime;
-      if (timeDiff >= timerLength && typing) {
+      if (timeDiff >= timerLength && typing && socket) {
         socket.emit("stop typing", selectedChat._id);
         setTyping(false);
       }
@@ -324,6 +479,7 @@ const ChatInterface = ({ user }) => {
 
   const getMessageSenderName = (sender) => {
     if (!sender) return "Unknown";
+    if (typeof sender === "string") return "User";
     if (sender.userType === "startup") {
       return capitalizeName(sender.companyName || sender.fullName || "Startup");
     }
@@ -333,17 +489,38 @@ const ChatInterface = ({ user }) => {
 
   const getChatName = (chat) => {
     if (!chat || !chat.users) return "";
-    const otherUser = chat.users.find((u) => u._id !== (user._id || user.id));
+    
+    // Normalize current user ID
+    const currentUserId = (user?._id || user?.id || "").toString();
+
+    // Find other user by comparing string representations of IDs
+    let otherUser = chat.users.find((u) => {
+      if (!u) return false;
+      const uId = (typeof u === "string" ? u : u._id || u.id || "").toString();
+      return uId && currentUserId && uId !== currentUserId;
+    });
+
+    // Fallback: if we didn't find any other user (e.g. self-chat or single user chat)
+    if (!otherUser) {
+      otherUser = chat.users.find((u) => u && (typeof u !== "string") && (u.fullName || u.companyName));
+    }
+
     if (!otherUser) return "Unknown User";
+
+    // If otherUser is just a string (unpopulated ID)
+    if (typeof otherUser === "string") {
+      return "User " + otherUser.substring(0, 4);
+    }
 
     if (otherUser.userType === "startup") {
       return capitalizeName(
         otherUser.companyName ||
           (chat.job && chat.job.company) ||
-          otherUser.fullName,
+          otherUser.fullName ||
+          "Startup"
       );
     }
-    return capitalizeName(otherUser.fullName);
+    return capitalizeName(otherUser.fullName || "User");
   };
 
   const isSameDay = (d1, d2) => {
@@ -368,7 +545,6 @@ const ChatInterface = ({ user }) => {
               Messages
             </h2>
           </div>
-          {/* Subtle search bar placeholder logic could go here */}
         </div>
         
         <div className="flex-1 overflow-y-auto divide-y divide-gray-100 dark:divide-white/5">
@@ -388,8 +564,6 @@ const ChatInterface = ({ user }) => {
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-brandOrange border border-brandOrange/20 shadow-sm ${isSelected ? "bg-brandOrange/20" : "bg-brandOrange/10"}`}>
                     <IconUser size={22} stroke={1.5} />
                   </div>
-                  {/* Status Indicator (Purely decorative for now) */}
-                  {/* <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-[#0d0a1c] rounded-full scale-110"></div> */}
                 </div>
 
                 {/* Content */}
@@ -444,24 +618,59 @@ const ChatInterface = ({ user }) => {
       >
         {selectedChat ? (
           <>
-            <div className="p-4 border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center gap-3">
-              <button
-                className="md:hidden p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"
-                onClick={() => setSelectedChat(null)}
-              >
-                <IconArrowLeft size={20} />
-              </button>
-              <div className="w-8 h-8 rounded-full bg-brandOrange/20 flex items-center justify-center">
-                <IconUser size={16} className="text-brandOrange" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-semibold text-gray-900 dark:text-white">
-                  {getChatName(selectedChat)}
-                </span>
-                {selectedChat.job && selectedChat.job.title && (
-                  <span className="text-xs text-brandOrange font-medium">
-                    {selectedChat.job.title}
+            <div className="p-4 border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center justify-between gap-3 relative">
+              <div className="flex items-center gap-3">
+                <button
+                  className="md:hidden p-1 text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                  onClick={() => setSelectedChat(null)}
+                >
+                  <IconArrowLeft size={20} />
+                </button>
+                <div className="w-8 h-8 rounded-full bg-brandOrange/20 flex items-center justify-center">
+                  <IconUser size={16} className="text-brandOrange" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {getChatName(selectedChat)}
                   </span>
+                  {selectedChat.job && selectedChat.job.title && (
+                    <span className="text-xs text-brandOrange font-medium">
+                      {selectedChat.job.title}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Chat Actions Dropdown Menu */}
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="p-2 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+                  title="Chat Actions"
+                >
+                  <IconDotsVertical size={20} />
+                </button>
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1a162b] border border-gray-200 dark:border-white/10 rounded-xl shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <button
+                      onClick={() => {
+                        setSelectionMode(true);
+                        setSelectedMessageIds([]);
+                        setShowDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-2"
+                    >
+                      <IconSquareCheck size={16} />
+                      Select Messages
+                    </button>
+                    <button
+                      onClick={handleDeleteAllMessages}
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 flex items-center gap-2"
+                    >
+                      <IconTrash size={16} />
+                      Delete All Messages
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -494,8 +703,22 @@ const ChatInterface = ({ user }) => {
                       )}
                       
                       <div
-                        className={`flex w-full relative ${isSender ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-4" : "mt-5"}`}
+                        className={`flex w-full relative items-center ${isSender ? "justify-end" : "justify-start"} ${isFirstInGroup ? "mt-4" : "mt-5"}`}
                       >
+                        {/* Selection Checkbox */}
+                        {selectionMode && (
+                          <button
+                            onClick={() => handleToggleMessageSelection(m._id)}
+                            className="mr-3 p-1 rounded-full text-brandOrange hover:bg-brandOrange/10 transition-colors shrink-0 z-10"
+                          >
+                            {selectedMessageIds.includes(m._id) ? (
+                              <IconSquareCheck size={22} className="text-brandOrange" />
+                            ) : (
+                              <IconSquare size={22} className="text-gray-400 dark:text-white/30" />
+                            )}
+                          </button>
+                        )}
+
                         {!isSender && isFirstInGroup && (
                            <div className="w-8 h-8 rounded-full bg-brandOrange/10 border border-brandOrange/20 flex items-center justify-center mr-2 self-end mb-0.5 shrink-0">
                              <IconUser size={16} className="text-brandOrange" />
@@ -503,10 +726,13 @@ const ChatInterface = ({ user }) => {
                         )}
                         <div
                           className={`flex flex-col max-w-[85%] md:max-w-[70%] ${isSender ? "items-end" : "items-start"}`}
-                          style={{ marginLeft: !isSender && !isFirstInGroup ? "2.5rem" : undefined }}
+                          style={{ marginLeft: !isSender && !isFirstInGroup && !selectionMode ? "2.5rem" : undefined }}
                         >
                           <div
+                            onClick={selectionMode ? () => handleToggleMessageSelection(m._id) : undefined}
                             className={`group relative py-1.5 px-3 sm:px-4 rounded-2xl text-[14px] shadow-sm flex flex-col transition-all border ${
+                              selectionMode ? "cursor-pointer select-none border-brandOrange/30 bg-brandOrange/5" : ""
+                            } ${
                               isSender
                                 ? "bg-brandOrange/90 dark:bg-brandOrange/80 text-black rounded-tr-none border-brandOrange/10"
                                 : "bg-white dark:bg-white/10 text-gray-900 dark:text-white rounded-tl-none border-gray-100 dark:border-white/5"
@@ -537,12 +763,6 @@ const ChatInterface = ({ user }) => {
                               )}
                               <div className={`text-[9px] sm:text-[10px] ml-auto mb-[-1px] flex items-center gap-1 font-semibold opacity-70 ${isSender ? "text-black" : "text-gray-500"}`}>
                                 {formatTime(m.createdAt)}
-                                {isSender && (
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="">
-                                    {/* <path d="M18 6 7 17l-5-5"></path> */}
-                                    {/* <path d="m22 10-7.5 7.5L13 16"></path> */}
-                                  </svg>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -567,94 +787,121 @@ const ChatInterface = ({ user }) => {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-3 md:p-4 bg-white dark:bg-[#0d0a1c] border-t border-gray-200 dark:border-white/10">
-              <div className="flex flex-col gap-3">
-                {filePreviewUrl && selectedFile && (
-                  <div className="px-4 py-3 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-between border border-black/5 dark:border-white/10 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/10 border border-white/10 flex items-center justify-center">
-                        {filePreviewUrl !== "document" ? (
-                          selectedFile.type.startsWith("video/") ? (
-                            <video src={filePreviewUrl} className="w-full h-full object-cover" />
-                          ) : (
-                            <img src={filePreviewUrl} className="w-full h-full object-cover" alt="Preview" />
-                          )
-                        ) : (
-                          <div className="flex flex-col items-center">
-                            <IconFile size={24} className="text-brandOrange" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[200px]">
-                          {selectedFile.name}
-                        </span>
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
-                          Preparing attachment...
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setFilePreviewUrl(null);
-                        if (fileInputRef.current) fileInputRef.current.value = "";
-                      }}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <IconX size={20} />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 md:gap-3 bg-gray-100 dark:bg-white/5 p-1.5 pl-3 rounded-[24px] border border-transparent focus-within:border-brandOrange/30 focus-within:bg-white dark:focus-within:bg-white/10 transition-all shadow-inner relative group">
+            {selectionMode ? (
+              <div className="p-3 md:p-4 bg-gray-50 dark:bg-[#1a162b] border-t border-gray-200 dark:border-white/10 flex items-center justify-between animate-in slide-in-from-bottom duration-300">
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                  {selectedMessageIds.length} message{selectedMessageIds.length !== 1 && "s"} selected
+                </span>
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className={`p-2 rounded-full transition-colors ${showEmojiPicker ? "text-brandOrange bg-brandOrange/10" : "text-gray-500 hover:text-brandOrange"}`}
+                    onClick={() => {
+                      setSelectionMode(false);
+                      setSelectedMessageIds([]);
+                    }}
+                    className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-white transition-colors"
                   >
-                    <IconMoodSmile size={22} />
+                    Cancel
                   </button>
-                  
-                  {showEmojiPicker && (
-                    <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-4 z-50">
-                      <EmojiPicker onEmojiClick={onEmojiClick} theme="auto" />
-                    </div>
-                  )}
-
-                  <input
-                    type="file"
-                    accept="*"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 text-gray-500 hover:text-brandBlue transition-colors rounded-full"
+                    onClick={handleDeleteSelectedMessages}
+                    disabled={selectedMessageIds.length === 0}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl flex items-center gap-2 transition-all shadow-md shadow-red-600/10"
                   >
-                    <IconPaperclip size={22} />
-                  </button>
-
-                  <input
-                    type="text"
-                    placeholder="Type a message..."
-                    className="flex-1 bg-transparent border-none text-gray-900 dark:text-white py-2.5 outline-none text-sm placeholder:text-gray-400"
-                    value={newMessage}
-                    onChange={typingHandler}
-                    onKeyDown={(e) => e.key === "Enter" && sendMessage(e)}
-                  />
-
-                  <button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() && !selectedFile}
-                    className="w-10 h-10 flex items-center justify-center bg-brandOrange text-black rounded-full shadow-lg shadow-brandOrange/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:scale-100"
-                  >
-                    <IconSend size={18} stroke={2.5} />
+                    <IconTrash size={16} />
+                    Delete 
                   </button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-3 md:p-4 bg-white dark:bg-[#0d0a1c] border-t border-gray-200 dark:border-white/10">
+                <div className="flex flex-col gap-3">
+                  {filePreviewUrl && selectedFile && (
+                    <div className="px-4 py-3 bg-gray-50 dark:bg-white/5 rounded-2xl flex items-center justify-between border border-black/5 dark:border-white/10 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-white/10 border border-white/10 flex items-center justify-center">
+                          {filePreviewUrl !== "document" ? (
+                            selectedFile.type.startsWith("video/") ? (
+                              <video src={filePreviewUrl} className="w-full h-full object-cover" />
+                            ) : (
+                              <img src={filePreviewUrl} className="w-full h-full object-cover" alt="Preview" />
+                            )
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <IconFile size={24} className="text-brandOrange" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[200px]">
+                            {selectedFile.name}
+                          </span>
+                          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+                            Preparing attachment...
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setFilePreviewUrl(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <IconX size={20} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 md:gap-3 bg-gray-100 dark:bg-white/5 p-1.5 pl-3 rounded-[24px] border border-transparent focus-within:border-brandOrange/30 focus-within:bg-white dark:focus-within:bg-white/10 transition-all shadow-inner relative group">
+                    <button
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      className={`p-2 rounded-full transition-colors ${showEmojiPicker ? "text-brandOrange bg-brandOrange/10" : "text-gray-500 hover:text-brandOrange"}`}
+                    >
+                      <IconMoodSmile size={22} />
+                    </button>
+                    
+                    {showEmojiPicker && (
+                      <div ref={emojiPickerRef} className="absolute bottom-full left-0 mb-4 z-50">
+                        <EmojiPicker onEmojiClick={onEmojiClick} theme="auto" />
+                      </div>
+                    )}
+
+                    <input
+                      type="file"
+                      accept="*"
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 text-gray-500 hover:text-brandBlue transition-colors rounded-full"
+                    >
+                      <IconPaperclip size={22} />
+                    </button>
+
+                    <input
+                      type="text"
+                      placeholder="Type a message..."
+                      className="flex-1 bg-transparent border-none text-gray-900 dark:text-white py-2.5 outline-none text-sm placeholder:text-gray-400"
+                      value={newMessage}
+                      onChange={typingHandler}
+                      onKeyDown={(e) => e.key === "Enter" && sendMessage(e)}
+                    />
+
+                    <button
+                      onClick={sendMessage}
+                      disabled={!newMessage.trim() && !selectedFile}
+                      className="w-10 h-10 flex items-center justify-center bg-brandOrange text-black rounded-full shadow-lg shadow-brandOrange/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:scale-100"
+                    >
+                      <IconSend size={18} stroke={2.5} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-400">

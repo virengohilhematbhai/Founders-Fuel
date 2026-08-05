@@ -6,14 +6,38 @@
   body {
     @apply bg-white text-gray-900 antialiased transition-colors duration-300;
   }
+
   .dark body {
     @apply bg-background text-white;
   }
+
   html.dark {
     color-scheme: dark;
   }
+
   html:not(.dark) {
     color-scheme: light;
+  }
+
+  /* Disable text selection globally across the website */
+  *,
+  *::before,
+  *::after {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection in inputs, textareas, and editable fields */
+  input,
+  textarea,
+  [contenteditable],
+  [contenteditable] * {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
 }
 
@@ -29,4 +53,10 @@
   .dark .glass-card {
     @apply bg-cardPurple border-white/5;
   }
+}
+
+/* Hide native password reveal button in Edge/IE to prevent duplicate eye icons */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
 }

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+// import TermsAndConditions from "./pages/TermsAndConditions";
+// import PrivacyPolicy from "./pages/PrivacyPolicy";
 import {
   IconUserPlus,
   IconMail,
@@ -12,10 +14,13 @@ import {
   IconBuildingSkyscraper,
   IconWorld,
   IconLoader2,
+  IconEye,
+  IconEyeOff,
 } from "@tabler/icons-react";
 
 const Registration = ({ onLogin }) => {
   const [userType, setUserType] = useState("fresher");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -34,6 +39,14 @@ const Registration = ({ onLogin }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === "phone") {
+      const onlyNums = value.replace(/[^0-9]/g, "");
+      if (onlyNums.length <= 10) {
+        setForm((prev) => ({ ...prev, [name]: onlyNums }));
+      }
+      setError("");
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     setError("");
   };
@@ -49,8 +62,10 @@ const Registration = ({ onLogin }) => {
       return setError("Password must be at least 6 characters.");
     if (!form.agreeTerms)
       return setError("Please agree to the Terms of Service.");
-    if (userType === "fresher" && !form.phone)
-      return setError("Phone number is required for freshers.");
+    if (userType === "fresher") {
+      if (!form.phone) return setError("Phone number is required for freshers.");
+      if (form.phone.length !== 10) return setError("Phone number must be exactly 10 digits.");
+    }
     if (userType === "startup" && !form.companyName)
       return setError("Company name is required for startups.");
 
@@ -70,8 +85,6 @@ const Registration = ({ onLogin }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Pinggy-No-Screen": "true",
-          "bypass-tunnel-reminder": "true",
         },
         body: JSON.stringify(payload),
       });
@@ -87,6 +100,7 @@ const Registration = ({ onLogin }) => {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.sessionToken) localStorage.setItem("sessionToken", data.sessionToken);
 
       setSuccess("Account created successfully! Redirecting to your dashboard...");
 
@@ -125,11 +139,10 @@ const Registration = ({ onLogin }) => {
               <button
                 type="button"
                 onClick={() => { setUserType("fresher"); setError(""); }}
-                className={`flex-1 py-3 px-6 rounded-2xl font-semibold transition-all text-center ${
-                  userType === "fresher"
+                className={`flex-1 py-3 px-6 rounded-2xl font-semibold transition-all text-center ${userType === "fresher"
                     ? "bg-brandOrange text-black shadow-lg"
                     : "text-black dark:text-gray-400 hover:text-gray-500 dark:hover:text-white"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-center gap-2">
                   <IconSchoolFilled className="w-6 h-6" strokeWidth={1.5} /> Fresher
@@ -138,11 +151,10 @@ const Registration = ({ onLogin }) => {
               <button
                 type="button"
                 onClick={() => { setUserType("startup"); setError(""); }}
-                className={`flex-1 py-3 px-6 rounded-2xl font-semibold transition-all text-center ${
-                  userType === "startup"
+                className={`flex-1 py-3 px-6 rounded-2xl font-semibold transition-all text-center ${userType === "startup"
                     ? "bg-brandOrange text-black shadow-lg"
                     : "text-black dark:text-gray-400 hover:text-gray-500 dark:hover:text-white"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-center gap-2">
                   <IconRocket stroke={2} /> Startup
@@ -250,10 +262,21 @@ const Registration = ({ onLogin }) => {
                   <div className="relative">
                     <IconLock className="absolute left-4 top-1/2 -translate-y-1/2 text-brandOrange" size={20} />
                     <input
-                      type="password" name="password" value={form.password} onChange={handleChange}
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={form.password}
+                      onChange={handleChange}
                       placeholder="Min 6 characters"
                       className={inputClass}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brandOrange transition-colors focus:outline-none"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <IconEyeOff size={20} /> : <IconEye size={20} />}
+                    </button>
                   </div>
                 </div>
 
@@ -265,9 +288,9 @@ const Registration = ({ onLogin }) => {
                   />
                   <span>
                     I agree to the{" "}
-                    <a href="#" className="text-brandOrange hover:underline">Terms of Service</a>{" "}
+                    <a href="/terms" className="text-brandOrange hover:underline">Terms of Service</a>{" "}
                     and{" "}
-                    <a href="#" className="text-brandOrange hover:underline">Privacy Policy</a>
+                    <a href="/privacy" className="text-brandOrange hover:underline">Privacy Policy</a>
                   </span>
                 </label>
 

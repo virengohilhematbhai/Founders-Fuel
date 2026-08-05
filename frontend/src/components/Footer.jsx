@@ -45,7 +45,7 @@ const Footer = () => {
       }
 
       // Default address
-      setContextAddress("Innovation Hub, Gujrat, India");
+      setContextAddress("B.H. Gardi College of Engineering and Technology, Rajkot, Gujrat, India");
       setContextLocation(null);
       setContextName("FoundersFuel HQ");
     };
@@ -88,7 +88,7 @@ const Footer = () => {
             <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed max-w-xs mx-auto sm:mx-0 text-center sm:text-left">
               Connecting visionaries with talent. We bridge the gap between pioneering startups and aspiring freshers to build the future together.
             </p>
-           
+
           </div>
 
           {/* Col 2 - Center: Responsive Location */}

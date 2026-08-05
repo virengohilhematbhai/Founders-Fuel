@@ -30,10 +30,10 @@ const userSchema = new mongoose.Schema(
       },
       required: [true, "User type is required"],
     },
-    phone:       { type: String, trim: true },
-    skills:      { type: String, trim: true },
+    phone: { type: String, trim: true },
+    skills: { type: String, trim: true },
     companyName: { type: String, trim: true },
-    website:     { type: String, trim: true },
+    website: { type: String, trim: true },
     companyAddress: { type: String, trim: true },
     location: {
       lat: { type: Number },
@@ -42,6 +42,14 @@ const userSchema = new mongoose.Schema(
     isBlacklisted: {
       type: Boolean,
       default: false,
+    },
+    activeSessionToken: {
+      type: String,
+      default: null,
+    },
+    activeSessionExpiry: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

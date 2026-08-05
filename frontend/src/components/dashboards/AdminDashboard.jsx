@@ -25,6 +25,7 @@ import {
 } from "@tabler/icons-react";
 import { useTheme } from "../../context/ThemeContext";
 import ChatInterface from "../chat/ChatInterface";
+import { AdminOverviewChart } from "./DashboardCharts";
 
 const AdminDashboard = ({ user, onLogout }) => {
   const { isDark, toggleTheme } = useTheme();
@@ -117,7 +118,7 @@ const AdminDashboard = ({ user, onLogout }) => {
       if (res.ok) {
         const updateList = (list) =>
           list.map((u) => (u._id === userId ? { ...u, isBlacklisted: data.user.isBlacklisted } : u));
-        
+
         if (type === "fresher") setFreshers(updateList(freshers));
         else setStartups(updateList(startups));
       } else {
@@ -145,7 +146,9 @@ const AdminDashboard = ({ user, onLogout }) => {
           setStartups(startups.filter(s => s._id !== userId));
         }
         // Refetch jobs since applications/jobs might have changed
-        const jobsRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/admin/jobs`, { headers: { Authorization: `Bearer ${token}` } });
+        const jobsRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/admin/jobs`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (jobsRes.ok) {
           const jobData = await jobsRes.json();
           setJobs(jobData.jobs || []);
@@ -171,7 +174,9 @@ const AdminDashboard = ({ user, onLogout }) => {
       });
       if (res.ok) {
         // Refetch jobs
-        const jobsRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/admin/jobs`, { headers: { Authorization: `Bearer ${token}` } });
+        const jobsRes = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/admin/jobs`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (jobsRes.ok) {
           const jobData = await jobsRes.json();
           setJobs(jobData.jobs || []);
@@ -230,13 +235,12 @@ const AdminDashboard = ({ user, onLogout }) => {
             <button
               key={id}
               onClick={() => handleTabChange(id)}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-sm font-bold ${
-                activeTab === id
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-sm font-bold ${activeTab === id
                   ? "bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20 shadow-[0_4px_12px_rgba(239,68,68,0.1)]"
-                  : `${textSecondary} hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5`
-              }`}
+                  : `${textSecondary} hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5`
+                }`}
             >
-              <Icon size={18} stroke={2.5} />
+              <Icon siz e={18} stroke={2.5} />
               {label}
             </button>
           ))}
@@ -280,13 +284,13 @@ const AdminDashboard = ({ user, onLogout }) => {
             <span className={`${textPrimary} font-semibold text-sm`}>Admin Panel</span>
           </div>
           <div className="flex items-center gap-2">
-            <button
+            {/* <button
               onClick={() => navigate("/")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 ${textSecondary} hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-all text-xs font-medium`}
             >
               <IconHome size={15} />
               Home
-            </button>
+            </button> */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className={`p-2 rounded-xl border border-gray-200 dark:border-white/10 ${textSecondary}`}
@@ -327,7 +331,13 @@ const AdminDashboard = ({ user, onLogout }) => {
                 ))}
               </div>
 
-              {/* Recent Freshers */}
+              {/* Single Full-Width Platform Growth Graph */}
+              <AdminOverviewChart
+                isDark={isDark}
+                freshersCount={freshers.length}
+                startupsCount={startups.length}
+                jobsCount={jobs.length}
+              />
               <div className={`${cardBg} p-4 sm:p-6`}>
                 <h2 className={`${textPrimary} font-semibold mb-4`}>Recent Freshers</h2>
                 {loading ? (
@@ -339,7 +349,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                     {freshers.slice(0, 5).map((f) => (
                       <div key={f._id} className={`flex items-center gap-3 p-3 rounded-xl ${innerCard}`}>
                         <div className="w-8 h-8 rounded-xl bg-brandOrange/20 flex items-center justify-center shrink-0">
-                          <span className="text-brandOrange text-xs font-bold">{f.fullName?.charAt(0).toUpperCase()}</span>
+                          <span className="text-brandOrange text-sm font-bold">{f.fullName?.charAt(0).toUpperCase()}</span>
                         </div>
                         <div className="min-w-0">
                           <p className={`${textPrimary} text-sm font-medium truncate`}>{f.fullName}</p>
@@ -425,18 +435,17 @@ const AdminDashboard = ({ user, onLogout }) => {
                               </span>
                             ))}
                           </div>
-                          
+
                         )}
                       </div>
                       <div className="flex flex-col gap-2 shrink-0">
                         <button
                           onClick={() => handleToggleBlacklist(f._id, "fresher")}
                           disabled={blacklistingUserId === f._id || deletingUserId === f._id}
-                          className={`p-1.5 sm:p-2 flex items-center gap-2 justify-center rounded-xl transition-colors disabled:opacity-50 border ${
-                            f.isBlacklisted
+                          className={`p-1.5 sm:p-2 flex items-center gap-2 justify-center rounded-xl transition-colors disabled:opacity-50 border ${f.isBlacklisted
                               ? "text-green-600 hover:bg-green-600/10 border-green-600/20"
                               : "text-amber-600 hover:bg-amber-600/10 border-amber-600/20"
-                          }`}
+                            }`}
                           title={f.isBlacklisted ? "Unblock User" : "Blacklist User"}
                         >
                           {blacklistingUserId === f._id ? (
@@ -459,7 +468,7 @@ const AdminDashboard = ({ user, onLogout }) => {
                               handleDeleteUser(f._id, "fresher");
                             }
                           }}
-                        disabled={deletingUserId === f._id || blacklistingUserId === f._id}
+                          disabled={deletingUserId === f._id || blacklistingUserId === f._id}
                           className="p-1.5 sm:p-2 flex items-center gap-2 justify-center rounded-xl text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-colors disabled:opacity-50"
                           title="Delete User"
                         >
@@ -526,49 +535,48 @@ const AdminDashboard = ({ user, onLogout }) => {
                             >
                               <IconMessage size={20} />Message
                             </button> */}
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleToggleBlacklist(s._id, "startup");
-                               }}
-                               disabled={blacklistingUserId === s._id || deletingUserId === s._id}
-                               className={`p-1.5 sm:p-2 flex items-center gap-2 justify-center rounded-xl transition-colors disabled:opacity-50 border ${
-                                 s.isBlacklisted
-                                   ? "text-green-600 hover:bg-green-600/10 border-green-600/20"
-                                   : "text-amber-600 hover:bg-amber-600/10 border-amber-600/20"
-                               }`}
-                               title={s.isBlacklisted ? "Unblock User" : "Blacklist User"}
-                             >
-                               {blacklistingUserId === s._id ? (
-                                 <IconLoader2 size={20} className="animate-spin" />
-                               ) : s.isBlacklisted ? (
-                                 <>
-                                   <IconLockOpen size={20} />
-                                   <span className="text-xs font-bold uppercase">Unblock</span>
-                                 </>
-                               ) : (
-                                 <>
-                                   <IconLock size={20} />
-                                   <span className="text-xs font-bold uppercase">Blacklist</span>
-                                 </>
-                               )}
-                             </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleBlacklist(s._id, "startup");
+                              }}
+                              disabled={blacklistingUserId === s._id || deletingUserId === s._id}
+                              className={`p-1.5 sm:p-2 flex items-center gap-2 justify-center rounded-xl transition-colors disabled:opacity-50 border ${s.isBlacklisted
+                                  ? "text-green-600 hover:bg-green-600/10 border-green-600/20"
+                                  : "text-amber-600 hover:bg-amber-600/10 border-amber-600/20"
+                                }`}
+                              title={s.isBlacklisted ? "Unblock User" : "Blacklist User"}
+                            >
+                              {blacklistingUserId === s._id ? (
+                                <IconLoader2 size={20} className="animate-spin" />
+                              ) : s.isBlacklisted ? (
+                                <>
+                                  <IconLockOpen size={20} />
+                                  <span className="text-xs font-bold uppercase">Unblock</span>
+                                </>
+                              ) : (
+                                <>
+                                  <IconLock size={20} />
+                                  <span className="text-xs font-bold uppercase">Blacklist</span>
+                                </>
+                              )}
+                            </button>
 
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (window.confirm(`PERMANENT DELETION WARNING: Once you choose to completely remove this startup (${s.companyName}), all their chat data, messages, and personal information will be completely removed from our system. This includes deleting the chat bar and all conversation history, and none of this data can be recovered. This action is final and irreversible. Proceed?`)) {
-                                 handleDeleteUser(s._id, "startup");
-                               }
-                            }}
-                            disabled={deletingUserId === s._id || blacklistingUserId === s._id}
+                                  handleDeleteUser(s._id, "startup");
+                                }
+                              }}
+                              disabled={deletingUserId === s._id || blacklistingUserId === s._id}
                               className="p-1.5 sm:p-2 flex items-center gap-2 justify-center rounded-xl text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-colors disabled:opacity-50"
                               title="Delete User"
                             >
                               {deletingUserId === s._id ? <IconLoader2 size={15} className="animate-spin" /> : <IconTrash size={20} />}Delete
                             </button>
                           </div>
-                           <div className="flex items-center gap-2 mt-auto">
+                          <div className="flex items-center gap-2 mt-auto">
                             <span className="px-2 sm:px-5 py-2.5 mt-3 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-500 dark:text-purple-400 text-xs">Startup</span>
                             {s.isBlacklisted && (
                               <span className="px-3 p-2 mt-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-wider">
@@ -723,11 +731,10 @@ const AdminDashboard = ({ user, onLogout }) => {
                         )}
                       </div>
 
-                      <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs ${
-                        job.status === "open"
+                      <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs ${job.status === "open"
                           ? "bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400"
                           : "bg-red-500/10 border border-red-500/20 text-red-500 dark:text-red-400"
-                      }`}>
+                        }`}>
                         {job.status}
                       </span>
                     </div>

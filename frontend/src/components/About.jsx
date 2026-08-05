@@ -41,7 +41,7 @@ const About = () => {
       {/* Mission & Vision Section */}
       <section className="w-full px-6 md:px-12 xl:px-15 pb-16 md:py-2 relative">
         <div className="relative z-10 max-w-[1400px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-16 md:mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-1 md:mb-20">
             {/* Mission */}
             <div className="flex flex-col">
               <div className="w-12 h-12 md:w-14 md:h-14 bg-gray-100 dark:bg-[#100C1B] rounded-2xl flex items-center justify-center mb-6 border border-gray-200 dark:border-white/5">
@@ -203,7 +203,8 @@ const About = () => {
               { number: "10K+", label: "Freshers" },
               { number: "1000+", label: "Placements" },
               { number: "50+", label: "Countries" },
-            ].map((stat, index) => (
+            ].
+            map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-brandOrange mb-2">
                   {stat.number}
@@ -212,7 +213,8 @@ const About = () => {
                   {stat.label}
                 </div>
               </div>
-            ))}
+            ))
+            }
           </div>
         </div>
       </section>

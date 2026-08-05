@@ -3,6 +3,11 @@ const Project = require("../models/Project");
 exports.submitProject = async (req, res, next) => {
   try {
     const { name, email, phone, projectTitle, description } = req.body;
+
+    const cleanPhone = phone ? phone.replace(/[^0-9]/g, "") : "";
+    if (cleanPhone.length !== 10) {
+      return res.status(400).json({ success: false, message: "Phone number must be exactly 10 digits." });
+    }
     
     // Process files if available
     const fileUrls = [];
@@ -16,7 +21,7 @@ exports.submitProject = async (req, res, next) => {
     const project = await Project.create({
       name,
       email,
-      phone,
+      phone: cleanPhone,
       projectTitle,
       description,
       fileUrls,

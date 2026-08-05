@@ -5,10 +5,11 @@ const EmbeddedMap = ({ address, companyName, location }) => {
   
   // Logic to determine the query: prioritized Coordinates (lat,lng) -> then Address
   let query = "";
-  if (location && location.lat && location.lng) {
-    query = `${location.lat},${location.lng}`;
-  } else {
-    query = address || "Innovation Hub, Gujrat, India";
+  // if (location && location.lat && location.lng) {
+  //   query = `${location.lat},${location.lng}`;
+  // } 
+  if (address) {
+    query = address || "B.H. Gardi College of Engineering and Technology , Rajkot, Gujarat, India";
   }
 
   const encodedQuery = encodeURIComponent(query);
