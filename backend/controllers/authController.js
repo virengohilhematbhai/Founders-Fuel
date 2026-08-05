@@ -102,7 +102,7 @@ const login = async (req, res) => {
       return res.status(400).json({ success: false, message: "Please provide email and password" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() }).select("+password");
+    const user = await User.findOne({ email: String(email).toLowerCase().trim() }).select("+password");
     if (!user) {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
