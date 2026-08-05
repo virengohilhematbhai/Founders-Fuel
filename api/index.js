@@ -1,7 +1,9 @@
 const connectDB = require("../backend/config/db");
 const app = require("../backend/server");
 
-// Override server error handler to give clean JSON in serverless context
+// Routes that work WITHOUT a database connection
+const NO_DB_ROUTES = ["/api/health", "/api/env-check", "/api/test-commit"];
+
 const handler = async (req, res) => {
   // Allow preflight OPTIONS without DB check
   if (req.method === "OPTIONS") {
@@ -11,24 +13,11 @@ const handler = async (req, res) => {
     return res.status(200).end();
   }
 
-  // Environment check route — does NOT require DB
-  if (req.url === "/api/env-check" || req.url === "/api/env-check/") {
-    const hasMongo = !!process.env.MONGO_URI;
-    const hasJwt = !!process.env.JWT_SECRET;
-    const mongoPreview = hasMongo
-      ? process.env.MONGO_URI.replace(/:([^@]+)@/, ":<hidden>@").substring(0, 60) + "..."
-      : "NOT SET";
-    return res.status(200).json({
-      success: true,
-      env: {
-        MONGO_URI_SET: hasMongo,
-        MONGO_URI_PREVIEW: mongoPreview,
-        JWT_SECRET_SET: hasJwt,
-        NODE_ENV: process.env.NODE_ENV || "not set",
-        FRONTEND_URL: process.env.FRONTEND_URL || "not set",
-        VERCEL: process.env.VERCEL || "not set",
-      },
-    });
+  const path = req.url ? req.url.split("?")[0] : "";
+
+  // Skip DB check for diagnostic routes
+  if (NO_DB_ROUTES.includes(path)) {
+    return app(req, res);
   }
 
   // Attempt DB connection before routing
@@ -36,10 +25,11 @@ const handler = async (req, res) => {
     await connectDB();
   } catch (dbErr) {
     console.error("Vercel DB Connection Error:", dbErr.message);
+    res.setHeader("Access-Control-Allow-Origin", "*");
     return res.status(503).json({
       success: false,
-      message: "Cannot connect to MongoDB database.",
-      hint: "Please add MONGO_URI in Vercel Project Settings → Environment Variables and redeploy.",
+      message: "Cannot connect to MongoDB Atlas.",
+      hint: "MONGO_URI is not set in Vercel. Go to Vercel Dashboard → Your Project → Settings → Environment Variables → Add MONGO_URI with your MongoDB Atlas connection string → Redeploy.",
       detail: dbErr.message,
     });
   }
