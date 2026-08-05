@@ -46,13 +46,32 @@ app.use("/api/users", require("./routes/userRoutes"));
 // Serve uploads statically
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Health check endpoint
+// Health check endpoint — also shows env status for debugging
 app.get("/api/health", (req, res) => {
-  res.status(200).json({ success: true, message: "FoundersFuel API is running" });
+  const hasMongo = !!process.env.MONGO_URI;
+  const mongoIsLocalhost = hasMongo && process.env.MONGO_URI.includes("localhost");
+  const mongoIsPlaceholder = hasMongo && (
+    process.env.MONGO_URI.includes("<YOUR_DATABASE_PASSWORD>") ||
+    process.env.MONGO_URI.includes("cluster0.xxxxx")
+  );
+  res.status(200).json({
+    success: true,
+    message: "FoundersFuel API is running",
+    env: {
+      MONGO_URI_SET: hasMongo,
+      MONGO_URI_OK: hasMongo && !mongoIsLocalhost && !mongoIsPlaceholder,
+      MONGO_URI_PREVIEW: hasMongo
+        ? process.env.MONGO_URI.replace(/:([^@]+)@/, ":<hidden>@").substring(0, 70)
+        : "NOT SET — add MONGO_URI in Vercel Settings → Environment Variables",
+      JWT_SECRET_SET: !!process.env.JWT_SECRET,
+      NODE_ENV: process.env.NODE_ENV || "not set",
+      FRONTEND_URL: process.env.FRONTEND_URL || "not set",
+    },
+  });
 });
 
 app.get("/api/test-commit", (req, res) => {
-  res.status(200).json({ success: true, commit: "c196c54-active" });
+  res.status(200).json({ success: true, commit: "8ad145d-active" });
 });
 
 // Serve frontend statically only if dist exists
