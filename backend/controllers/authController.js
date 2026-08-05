@@ -38,7 +38,7 @@ const register = async (req, res) => {
       return res.status(400).json({ success: false, message: "Company name is required for startups" });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: String(email).toLowerCase().trim() });
     if (existingUser) {
       return res.status(400).json({ success: false, message: "Email already registered" });
     }

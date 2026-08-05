@@ -81,7 +81,8 @@ const Registration = ({ onLogin }) => {
           : { companyName: form.companyName, website: form.website }),
       };
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/register`, {
+      const baseUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+      const res = await fetch(`${baseUrl}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
