@@ -9,8 +9,13 @@ const connectDB = async () => {
 
   mongoose.set("bufferCommands", false);
 
-  if (process.env.VERCEL && (!process.env.MONGO_URI || process.env.MONGO_URI.includes("localhost") || process.env.MONGO_URI.includes("<YOUR_DATABASE_PASSWORD>"))) {
-    const errorMsg = "Database Config Missing: MONGO_URI environment variable is not configured in Vercel. Please add your MongoDB Atlas URI in Vercel Project Settings -> Environment Variables.";
+  const isPlaceholder = !process.env.MONGO_URI || 
+                      process.env.MONGO_URI.includes("localhost") || 
+                      process.env.MONGO_URI.includes("<YOUR_DATABASE_PASSWORD>") || 
+                      process.env.MONGO_URI.includes("cluster0.xxxxx");
+
+  if (process.env.VERCEL && isPlaceholder) {
+    const errorMsg = "Database Config Missing: MONGO_URI environment variable in Vercel contains placeholder values (<YOUR_DATABASE_PASSWORD>). Please replace MONGO_URI with a valid MongoDB Atlas connection string in Vercel Project Settings -> Environment Variables.";
     console.error(`❌ ${errorMsg}`);
     throw new Error(errorMsg);
   }
