@@ -34,7 +34,8 @@ const Login = ({ onLogin }) => {
 
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/login`, {
+      const baseUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+      const res = await fetch(`${baseUrl}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

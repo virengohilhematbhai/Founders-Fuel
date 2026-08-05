@@ -7,7 +7,11 @@ const errorHandler = (err, req, res, next) => {
   let message = err.message || "Internal Server Error";
 
   // Database connection errors
-  if (err.message && (err.message.includes("Database Error") || err.message.includes("MongoDB Connection Error"))) {
+  if (err.message && (
+    err.message.includes("Database") ||
+    err.message.includes("MongoDB") ||
+    err.message.includes("MONGO_URI")
+  )) {
     statusCode = 503;
     message = err.message;
   }
