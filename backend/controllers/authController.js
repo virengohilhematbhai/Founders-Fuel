@@ -119,12 +119,16 @@ const login = async (req, res) => {
       });
     }
 
-    // Create new session and save to DB using findByIdAndUpdate (avoids password re-hash)
+    // Create new session and save to DB
     const { sessionToken, sessionExpiry } = createSessionData();
-    await User.findByIdAndUpdate(user._id, {
-      activeSessionToken: sessionToken,
-      activeSessionExpiry: sessionExpiry,
-    });
+    try {
+      await User.findByIdAndUpdate(user._id, {
+        activeSessionToken: sessionToken,
+        activeSessionExpiry: sessionExpiry,
+      });
+    } catch (sessionErr) {
+      console.warn("Session update warning:", sessionErr.message);
+    }
 
     const token = generateToken(user._id, sessionToken);
 
