@@ -150,7 +150,11 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error.name, "-", error.message);
-    return res.status(500).json({ success: false, message: error.message || "Server error during login. Please try again." });
+    const errText = error.message || (typeof error === "string" ? error : "Database error");
+    return res.status(500).json({
+      success: false,
+      message: `Login failed: ${errText}. Please ensure MONGO_URI is configured in Vercel environment variables.`
+    });
   }
 };
 
