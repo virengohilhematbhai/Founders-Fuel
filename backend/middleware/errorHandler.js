@@ -6,6 +6,12 @@ const errorHandler = (err, req, res, next) => {
   let statusCode = 500;
   let message = err.message || "Internal Server Error";
 
+  // Database connection errors
+  if (err.message && (err.message.includes("Database Error") || err.message.includes("MongoDB Connection Error"))) {
+    statusCode = 503;
+    message = err.message;
+  }
+
   // Mongoose bad ObjectId
   if (err.name === "CastError" && err.kind === "ObjectId") {
     statusCode = 404;
