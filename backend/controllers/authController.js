@@ -20,7 +20,7 @@ const createSessionData = () => {
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { fullName, email, password, userType, phone, skills, companyName, website } = req.body;
+    const { fullName, email, password, userType, phone, skills, companyName, website } = req.body || {};
 
     if (!fullName || !email || !password || !userType) {
       return res.status(400).json({ success: false, message: "fullName, email, password and userType are required" });
@@ -96,7 +96,7 @@ const register = async (req, res) => {
 // POST /api/auth/login
 const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: "Please provide email and password" });
