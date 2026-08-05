@@ -3,7 +3,8 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
 const generateToken = (id, sessionToken) => {
-  return jwt.sign({ id, sessionToken }, process.env.JWT_SECRET, {
+  const secret = process.env.JWT_SECRET || "foundersfuel_super_secret_key_change_in_production";
+  return jwt.sign({ id, sessionToken }, secret, {
     expiresIn: process.env.JWT_EXPIRE || "7d",
   });
 };
